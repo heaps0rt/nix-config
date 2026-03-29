@@ -28,6 +28,8 @@
 	pkgs.gh
 	pkgs.kitty
 	pkgs.git
+	pkgs.killall
+	pkgs.deskflow
     # # Adds the 'hello' command to your environment. It prints a friendly
     # # "Hello, world!" when run.
     # pkgs.hello
