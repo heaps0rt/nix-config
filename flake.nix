@@ -8,7 +8,14 @@
   outputs = { self, nixpkgs }: {
     nixosConfigurations.desktop = nixpkgs.lib.nixosSystem {
       system = "x86_64-linux";
-      modules = [ ./configuration.nix ];
+      modules = [ 
+        ./configuration.nix 
+        home-manager.nixosModules.home-manager {
+          home-manager.useGlobalPkgs = true;   # use system nixpkgs
+          home-manager.useUserPackages = true;  # install to user profile
+          home-manager.users.heap = import ./home.nix;
+        }
+      ];
     };
   };
 }
