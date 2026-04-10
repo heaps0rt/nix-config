@@ -1,84 +1,80 @@
-# Edit this configuration file to define what should be installed on
-# your system.  Help is available in the configuration.nix(5) man page
-# and in the NixOS manual (accessible by running ‘nixos-help’).
-
 { config, pkgs, inputs, ... }:
 
 {
-  imports =
-    [ # Include the results of the hardware scan.
-      ./hardware.nix
-    ];
-  
+  imports = [
+    ./hardware.nix
+  ];
+
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
 
-  # Bootloader.
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
 
-  # Use latest kernel.
-#  boot.kernelPackages = pkgs.linuxPackages_stable;
+  networking.hostName = "desktop";
+  networking.networkmanager.enable = true;
 
-  networking.hostName = "desktop"; # Define your hostname.
-  # networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
+  networking.nameservers = [ "127.0.0.1" ];
+  services.resolved.enable = false;
 
-  # Configure network proxy if necessary
-  # networking.proxy.default = "http://user:password@proxy:port/";
-  # networking.proxy.noProxy = "127.0.0.1,localhost,internal.domain";
-
-   # Enable OpenGL (hardware acceleration)
-  hardware.graphics = {
+  services.dnsmasq = {
     enable = true;
+    settings = {
+      no-resolv = true;
+      server = [
+        "1.1.1.1"
+        "1.0.0.1"
+        "8.8.8.8"
+        "8.8.4.4"
+      ];
+      cache-size = 10000;
+      domain-needed = true;
+      bogus-priv = true;
+      all-servers = true;
+      min-cache-ttl = 300;
+      max-cache-ttl = 86400;
+    };
   };
 
-  # Load nvidia driver for Xorg and Wayland
+  boot.kernel.sysctl = {
+    "net.core.default_qdisc" = "fq";
+    "net.ipv4.tcp_congestion_control" = "bbr";
+  };
+
+  hardware.graphics = {
+    enable = true;
+    enable32Bit = true;
+  };
+
   services.xserver.videoDrivers = [ "nvidia" ];
 
   hardware.nvidia = {
-    # Modesetting is required
     modesetting.enable = true;
-    
-    # Enable power management (optional, for suspend/resume)
     powerManagement.enable = false;
-    
-    # Use the open source version of the kernel module
-    # Only available on 515.43.04+
     open = true;
-    
-    # Enable NVIDIA settings menu
     nvidiaSettings = true;
-
-    # Choose driver version (e.g., latest, production)
     package = config.boot.kernelPackages.nvidiaPackages.stable;
   };
 
-  # Enable networking
-  networking.networkmanager.enable = true;
+  programs.steam = {
+    enable = true;
+    remotePlay.openFirewall = true;
+    dedicatedServer.openFirewall = true;
+  };
 
-  # Set your time zone.
   time.timeZone = "Europe/Oslo";
-
-  # Select internationalisation properties.
   i18n.defaultLocale = "en_US.UTF-8";
 
-  # Enable the X11 windowing system.
-  # You can disable this if you're only using the Wayland session.
   services.xserver.enable = true;
-
-  # Enable the KDE Plasma Desktop Environment.
   services.displayManager.sddm.enable = true;
   services.desktopManager.plasma6.enable = true;
 
-  # Configure keymap in X11
   services.xserver.xkb = {
     layout = "us";
     variant = "";
   };
 
-  # Enable CUPS to print documents.
   services.printing.enable = true;
 
-  # Enable sound with pipewire.
   services.pulseaudio.enable = false;
   security.rtkit.enable = true;
   services.pipewire = {
@@ -86,79 +82,36 @@
     alsa.enable = true;
     alsa.support32Bit = true;
     pulse.enable = true;
-    # If you want to use JACK applications, uncomment this
-    #jack.enable = true;
-
-    # use the example session manager (no others are packaged yet so this is enabled by default,
-    # no need to redefine it in your config for now)
-    #media-session.enable = true;
   };
 
-  # Enable touchpad support (enabled default in most desktopManager).
-  # services.xserver.libinput.enable = true;
-
-  # Define a user account. Don't forget to set a password with ‘passwd’.
   users.users.heap = {
     isNormalUser = true;
     description = "Heap";
     extraGroups = [ "networkmanager" "wheel" ];
-    packages = with pkgs; [
-      kdePackages.kate
-      thunderbird
+    packages = [
+      pkgs.kdePackages.kate
+      pkgs.thunderbird
+      pkgs.kdePackages.partitionmanager
     ];
     shell = pkgs.fish;
   };
 
-  # Enable hyprland
   programs.hyprland = {
     enable = true;
-    # set the flake package
     package = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.hyprland;
-    # make sure to also set the portal package, so that they are in sync
     portalPackage = inputs.hyprland.packages.${pkgs.stdenv.hostPlatform.system}.xdg-desktop-portal-hyprland;
   };
 
-  # Enable fish
   programs.fish.enable = true;
-
-  # Install firefox.
   programs.firefox.enable = true;
 
-  # Allow unfree packages
   nixpkgs.config.allowUnfree = true;
 
-  # List packages installed in system profile. To search, run:
-  # $ nix search wget
-  environment.systemPackages = with pkgs; [
-  #  vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
-  #  wget
-  ];
+  environment.systemPackages = [ ];
 
-  # Some programs need SUID wrappers, can be configured further or are
-  # started in user sessions.
-  # programs.mtr.enable = true;
-  # programs.gnupg.agent = {
-  #   enable = true;
-  #   enableSSHSupport = true;
-  # };
-
-  # List services that you want to enable:
-
-  # Enable the OpenSSH daemon.
-  # services.openssh.enable = true;
-
-  # Open ports in the firewall.
-  networking.firewall.allowedTCPPorts = [ 24800 ];
-  # networking.firewall.allowedUDPPorts = [ ... ];
-  # Or disable the firewall altogether.
   networking.firewall.enable = true;
+  networking.firewall.allowedTCPPorts = [ 53 24800 ];
+  networking.firewall.allowedUDPPorts = [ 53 ];
 
-  # This value determines the NixOS release from which the default
-  # settings for stateful data, like file locations and database versions
-  # on your system were taken. It‘s perfectly fine and recommended to leave
-  # this value at the release version of the first install of this system.
-  # Before changing this value read the documentation for this option
-  # (e.g. man configuration.nix or on https://nixos.org/nixos/options.html).
-  system.stateVersion = "25.11"; # Did you read the comment?
-
+  system.stateVersion = "25.11";
 }

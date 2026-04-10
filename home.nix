@@ -30,6 +30,10 @@
 	pkgs.git
 	pkgs.killall
 	pkgs.deskflow
+	pkgs.home-manager	
+	pkgs.steam
+	pkgs.libreoffice
+	pkgs.uv
     # # Adds the 'hello' command to your environment. It prints a friendly
     # # "Hello, world!" when run.
     # pkgs.hello
